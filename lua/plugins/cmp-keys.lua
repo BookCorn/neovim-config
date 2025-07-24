@@ -31,8 +31,21 @@ return {
         end
       end, { "i", "s" }),
 
+      --------------------------------------------------------------------------
+      -- ② Shift-Tab：补全菜单可见 -> 上一个；否则(有 snippet) -> 上一个 snippet
+      --------------------------------------------------------------------------
+      ["<S-Tab>"] = cmp.mapping(function(fallback)
+        if cmp.visible() then
+          cmp.select_prev_item()
+        elseif luasnip and luasnip.jumpable(-1) then
+          luasnip.jump(-1)
+        else
+          fallback()
+        end
+      end, { "i", "s" }),
+
       ----------------------------------------------------------------------------
-      -- ② Enter：永远只是换行（补全菜单仍然会保持，但不会 confirm）
+      -- ③ Enter：永远只是换行（补全菜单仍然会保持，但不会 confirm）
       ----------------------------------------------------------------------------
       ["<CR>"] = cmp.mapping(function(fallback)
         if cmp.visible() then
