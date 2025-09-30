@@ -1,7 +1,8 @@
 -- Configure blink.cmp to behave closer to JetBrains
--- - <Tab>: accept completion only when the menu is visible; otherwise fallback
--- - <CR>: do not accept completion, keep default newline behavior
+-- - <Tab>: accept completion (or Copilot ghost) when appropriate; fallback otherwise
+-- - <CR>: accept completion when the menu is visible, otherwise newline
 -- - <C-Space>: manual completion trigger (like IDEA)
+-- - <C-y>: accept completion explicitly when the menu is visible
 -- - Sources: LSP, snippets, path, buffer
 -- - Enable signature help and docs popup
 return {
@@ -29,55 +30,91 @@ return {
 
     -- Keep defaults for signature/docs to follow blink.cmp schema
 
-    -- Keymaps: JetBrains-like acceptance on <Tab>/<CR>; arrow keys navigate menu
+    -- Keymaps: JetBrains-like flow with Copilot integration
     opts.keymap = opts.keymap or {}
     opts.keymap.preset = "none"
-    -- Use a small helper to keep compatibility across versions
-    local function map_accept_on_tab()
-      local ok, cmp = pcall(require, "blink.cmp")
-      if not ok then return end
-      if cmp.is_visible and cmp.is_visible() then
-        cmp.accept()
-      else
-        -- Fallback to literal <Tab>
-        local keys = vim.api.nvim_replace_termcodes("<Tab>", true, false, true)
-        vim.api.nvim_feedkeys(keys, "n", false)
-      end
+
+    local function feed(keys)
+      vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes(keys, true, false, true), "n", false)
     end
+
+    local function copilot_accept_if_visible()
+      local ok, suggestion = pcall(require, "copilot.suggestion")
+      if ok and suggestion.is_visible() then
+        suggestion.accept()
+        return true
+      end
+      return false
+    end
+
+    local function cmp_is_visible()
+      local ok, cmp = pcall(require, "blink.cmp")
+      if not ok or not cmp.is_visible then
+        return false, nil
+      end
+      return cmp.is_visible(), cmp
+    end
+
+    local function accept_cmp()
+      local visible, cmp = cmp_is_visible()
+      if visible then
+        cmp.accept()
+        return true
+      end
+      return false
+    end
+
+    local function map_tab()
+      if copilot_accept_if_visible() then
+        return
+      end
+      if accept_cmp() then
+        return
+      end
+      feed("<Tab>")
+    end
+
     local function map_cr_accept_or_newline()
-      local ok, cmp = pcall(require, "blink.cmp")
-      if ok and cmp.is_visible and cmp.is_visible() then
-        cmp.accept()
-      else
-        local keys = vim.api.nvim_replace_termcodes("<CR>", true, false, true)
-        vim.api.nvim_feedkeys(keys, "n", false)
+      if accept_cmp() then
+        return
       end
+      feed("<CR>")
     end
+
+    local function map_accept_on_ctrl_y()
+      if accept_cmp() then
+        return
+      end
+      feed("<C-y>")
+    end
+
     local function map_select_next()
-      local ok, cmp = pcall(require, "blink.cmp")
-      if ok and cmp.is_visible and cmp.is_visible() and cmp.select_next then
+      local visible, cmp = cmp_is_visible()
+      if visible and cmp.select_next then
         cmp.select_next()
       else
-        local keys = vim.api.nvim_replace_termcodes("<Down>", true, false, true)
-        vim.api.nvim_feedkeys(keys, "n", false)
+        feed("<Down>")
       end
     end
+
     local function map_select_prev()
-      local ok, cmp = pcall(require, "blink.cmp")
-      if ok and cmp.is_visible and cmp.is_visible() and cmp.select_prev then
+      local visible, cmp = cmp_is_visible()
+      if visible and cmp.select_prev then
         cmp.select_prev()
       else
-        local keys = vim.api.nvim_replace_termcodes("<Up>", true, false, true)
-        vim.api.nvim_feedkeys(keys, "n", false)
+        feed("<Up>")
       end
     end
 
     -- Set explicit mappings in insert/select mode
-    vim.keymap.set({ "i", "s" }, "<Tab>", map_accept_on_tab, { desc = "Accept completion or insert Tab" })
+    vim.keymap.set({ "i", "s" }, "<Tab>", map_tab, { desc = "Accept completion or Copilot suggestion" })
     vim.keymap.set({ "i", "s" }, "<CR>", map_cr_accept_or_newline, { desc = "Accept completion or newline" })
+    vim.keymap.set({ "i", "s" }, "<C-y>", map_accept_on_ctrl_y, { desc = "Accept completion" })
     vim.keymap.set({ "i", "s" }, "<C-Space>", function()
       local ok, cmp = pcall(require, "blink.cmp")
-      if ok and cmp.show then cmp.show() end
+      if ok and cmp.show then
+        cmp.show()
+      end
     end, { desc = "Manual completion" })
     vim.keymap.set({ "i", "s" }, "<Down>", map_select_next, { desc = "Next completion item or cursor down" })
     vim.keymap.set({ "i", "s" }, "<Up>", map_select_prev, { desc = "Prev completion item or cursor up" })
