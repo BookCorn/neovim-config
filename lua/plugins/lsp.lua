@@ -5,19 +5,8 @@ return {
     opts = function(_, opts)
       opts = opts or {}
 
-      -- Default servers merged with any existing definitions
+      -- Baseline servers that install without language-specific toolchains
       local servers = {
-        -- Java
-        jdtls = {},
-        -- Go
-        gopls = {},
-        -- Rust
-        rust_analyzer = {},
-        -- Python
-        pyright = {},
-        -- C/C++
-        clangd = {},
-        -- Web / Frontend
         html = {},
         cssls = {},
         jsonls = {},
@@ -37,12 +26,45 @@ return {
             "astro",
           },
         },
-        -- Svelte
         svelte = {},
-        -- Optional: Vue / Astro if present in projects
         volar = {},
         astro = {},
       }
+
+      local function is_list(value)
+        if vim.tbl_islist then
+          return vim.tbl_islist(value)
+        end
+
+        local max_index = 0
+        for key in pairs(value) do
+          if type(key) ~= "number" then
+            return false
+          end
+          if key > max_index then
+            max_index = key
+          end
+        end
+        return max_index == #value
+      end
+
+      -- Allow users to add extra servers (e.g., rust_analyzer) via vim.g.extra_lsp_servers
+      local user_servers = vim.g.extra_lsp_servers
+      if type(user_servers) == "table" then
+        if is_list(user_servers) then
+          for _, name in ipairs(user_servers) do
+            if type(name) == "string" then
+              servers[name] = {}
+            end
+          end
+        else
+          for name, config in pairs(user_servers) do
+            if type(name) == "string" then
+              servers[name] = config == true and {} or config
+            end
+          end
+        end
+      end
 
       opts.servers = vim.tbl_deep_extend("force", servers, opts.servers or {})
 
@@ -54,7 +76,6 @@ return {
         virtual_text = { spacing = 2, source = "if_many" },
       })
 
-      -- Send didChange quickly to servers
       local function ensure_flags(conf)
         conf = conf or {}
         conf.flags = vim.tbl_deep_extend("force", conf.flags or {}, {
@@ -66,18 +87,6 @@ return {
       for name, conf in pairs(opts.servers) do
         opts.servers[name] = ensure_flags(conf)
       end
-
-      for _, name in ipairs({ "rust_analyzer", "jdtls", "gopls", "pyright", "clangd" }) do
-        opts.servers[name] = ensure_flags(opts.servers[name])
-      end
-
-      opts.servers.rust_analyzer = vim.tbl_deep_extend("force", opts.servers.rust_analyzer or {}, {
-        settings = {
-          ["rust-analyzer"] = {
-            diagnostics = { enable = true },
-          },
-        },
-      })
 
       return opts
     end,
