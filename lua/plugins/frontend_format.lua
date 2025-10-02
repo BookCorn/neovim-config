@@ -3,36 +3,58 @@ return {
   {
     "stevearc/conform.nvim",
     optional = true,
-    opts = function()
-      local ok, conform = pcall(require, "conform")
-      if not ok then return {} end
-      return {
-        format_on_save = function(bufnr)
-          -- Skip very large files
-          local max = 200 * 1024
-          local ok_fs, stats = pcall(vim.loop.fs_stat, vim.api.nvim_buf_get_name(bufnr))
-          if ok_fs and stats and stats.size and stats.size > max then return nil end
-          return { timeout_ms = 2000, lsp_fallback = true }
-        end,
-        formatters_by_ft = {
-          javascript = { "prettierd", "prettier", "biome" },
-          javascriptreact = { "prettierd", "prettier", "biome" },
-          typescript = { "prettierd", "prettier", "biome" },
-          typescriptreact = { "prettierd", "prettier", "biome" },
-          svelte = { "prettierd", "prettier" },
-          vue = { "prettierd", "prettier" },
-          astro = { "prettierd", "prettier" },
-          css = { "prettierd", "prettier" },
-          scss = { "prettierd", "prettier" },
-          less = { "prettierd", "prettier" },
-          html = { "prettierd", "prettier" },
-          json = { "prettierd", "prettier" },
-          yaml = { "prettierd", "prettier" },
-          markdown = { "prettierd", "prettier" },
-          ["markdown.mdx"] = { "prettierd", "prettier" },
-        },
-      }
+    opts = function(_, opts)
+      opts = opts or {}
+
+      local function ensure_condition(name, predicate)
+        opts.formatters = opts.formatters or {}
+        local cfg = opts.formatters[name]
+        if cfg == nil then
+          cfg = {}
+          opts.formatters[name] = cfg
+        elseif type(cfg) == "function" then
+          cfg = { format = cfg }
+          opts.formatters[name] = cfg
+        end
+        local prev = cfg.condition
+        cfg.condition = function(self, ctx)
+          if prev and not prev(self, ctx) then return false end
+          return predicate(ctx)
+        end
+      end
+
+      opts.formatters_by_ft = opts.formatters_by_ft or {}
+      local web = { "prettierd", "prettier", "biome" }
+      for _, ft in ipairs({
+        "javascript",
+        "javascriptreact",
+        "typescript",
+        "typescriptreact",
+        "svelte",
+        "vue",
+        "astro",
+        "css",
+        "scss",
+        "less",
+        "html",
+        "json",
+        "yaml",
+        "markdown",
+        "markdown.mdx",
+      }) do
+        opts.formatters_by_ft[ft] = opts.formatters_by_ft[ft] or web
+      end
+
+      local function within_size_limit(ctx)
+        local name = vim.api.nvim_buf_get_name(ctx.buf)
+        if name == "" then return true end
+        local stat = (vim.uv or vim.loop).fs_stat(name)
+        return not (stat and stat.size and stat.size > 200 * 1024)
+      end
+
+      for _, formatter in ipairs({ "prettierd", "prettier", "biome" }) do
+        ensure_condition(formatter, within_size_limit)
+      end
     end,
   },
 }
-
