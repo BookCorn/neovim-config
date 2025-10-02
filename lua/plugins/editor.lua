@@ -44,65 +44,37 @@ return {
     },
   },
   {
-    "jake-stewart/multicursor.nvim",
-    branch = "1.0",
+    "brenton-leighton/multiple-cursors.nvim",
+    branch = "main",
     event = "VeryLazy",
-    config = function()
-      local mc = require("multicursor-nvim")
-      mc.setup()
+    opts = {},
+    config = function(_, opts)
+      local mc = require("multiple-cursors")
+      mc.setup(opts)
 
       local set = vim.keymap.set
+      local function cmd(name)
+        return "<Cmd>" .. name .. "<CR>"
+      end
 
-      set({ "n", "x" }, "<leader>mk", function()
-        mc.lineAddCursor(-1)
-      end, { desc = "Multi: add cursor above" })
+      set({ "n", "x" }, "<leader>mk", cmd("MultipleCursorsAddUp"), { desc = "Multi: add cursor above" })
+      set({ "n", "x" }, "<leader>mj", cmd("MultipleCursorsAddDown"), { desc = "Multi: add cursor below" })
 
-      set({ "n", "x" }, "<leader>mj", function()
-        mc.lineAddCursor(1)
-      end, { desc = "Multi: add cursor below" })
+      set({ "n", "x" }, "<leader>mn", cmd("MultipleCursorsAddJumpNextMatch"), { desc = "Multi: add next match cursor" })
+      set({ "n", "x" }, "<leader>mN", cmd("MultipleCursorsAddJumpPrevMatch"), { desc = "Multi: add previous match cursor" })
 
-      set({ "n", "x" }, "<leader>mn", function()
-        mc.matchAddCursor(1)
-      end, { desc = "Multi: add next match cursor" })
+      set({ "n", "x" }, "<leader>ms", cmd("MultipleCursorsJumpNextMatch"), { desc = "Multi: skip next match" })
+      set({ "n", "x" }, "<leader>mS", cmd("MultipleCursorsJumpPrevMatch"), { desc = "Multi: skip previous match" })
 
-      set({ "n", "x" }, "<leader>mN", function()
-        mc.matchAddCursor(-1)
-      end, { desc = "Multi: add previous match cursor" })
+      set({ "n", "x" }, "<leader>mA", cmd("MultipleCursorsAddMatches"), { desc = "Multi: add cursors to matches" })
 
-      set({ "n", "x" }, "<leader>ms", function()
-        mc.matchSkipCursor(1)
-      end, { desc = "Multi: skip next match" })
-
-      set({ "n", "x" }, "<leader>mS", function()
-        mc.matchSkipCursor(-1)
-      end, { desc = "Multi: skip previous match" })
-
-      set({ "n", "x" }, "<leader>mA", mc.matchAllAddCursors, { desc = "Multi: add cursors to all matches" })
-
-      set({ "n", "x" }, "<leader>mm", mc.toggleCursor, { desc = "Multi: toggle cursor enable" })
+      set({ "n", "x" }, "<leader>mm", cmd("MultipleCursorsLock"), { desc = "Multi: toggle lock" })
 
       set({ "n", "x" }, "<leader>mc", function()
-        if mc.hasCursors() then
-          mc.clearCursors()
-        end
+        mc.deinit(true)
       end, { desc = "Multi: clear cursors" })
 
-      set("n", "<C-LeftMouse>", mc.handleMouse, { desc = "Multi: add cursor with mouse" })
-      set("n", "<C-LeftDrag>", mc.handleMouseDrag, { desc = "Multi: drag multi cursor selection" })
-      set("n", "<C-LeftRelease>", mc.handleMouseRelease, { desc = "Multi: finish multi cursor drag" })
-
-      mc.addKeymapLayer(function(layerSet)
-        layerSet({ "n", "x" }, "<leader>m,", mc.prevCursor)
-        layerSet({ "n", "x" }, "<leader>m.", mc.nextCursor)
-        layerSet({ "n", "x" }, "<leader>mx", mc.deleteCursor)
-        layerSet("n", "<esc>", function()
-          if not mc.cursorsEnabled() then
-            mc.enableCursors()
-          else
-            mc.clearCursors()
-          end
-        end)
-      end)
+      set({ "n", "i" }, "<C-LeftMouse>", cmd("MultipleCursorsMouseAddDelete"), { desc = "Multi: add/remove cursor" })
     end,
   },
 }
