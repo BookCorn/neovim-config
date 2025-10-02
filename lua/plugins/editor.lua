@@ -150,8 +150,7 @@ return {
 
         local mode = vim.api.nvim_get_mode().mode
         local head = mode:sub(1, 1)
-        local is_visual = head == "v" or head == "V" or head == "\22"
-          or head == "s" or head == "S" or head == "\19"
+        local is_visual = head == "v" or head == "V" or head == "\22" or head == "s" or head == "S" or head == "\19"
 
         if is_visual then
           local l1, c1, l2, c2 = common.get_normalised_visual_area()
@@ -230,7 +229,7 @@ return {
         { desc = "Multi: add/remove cursor", silent = true }
       )
 
-      set({ "n", "x" }, "<A-n>", add_next_word, { desc = "Multi: add cursor then move forward (Alt-n)", silent = true })
+      set({ "n", "x" }, "<C-i>", add_next_word, { desc = "Multi: add cursor then move forward (Alt-n)", silent = true })
 
       local unlock_modes = {
         i = true,
