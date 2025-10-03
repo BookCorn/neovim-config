@@ -3,3 +3,6 @@
 -- Add any additional options here
 vim.o.completeopt = "menu,menuone,noselect"
 vim.o.shortmess = vim.o.shortmess .. "c"
+
+-- keep Neovim clipboard separate from system clipboard; use `"+` register when needed
+vim.opt.clipboard = {}
