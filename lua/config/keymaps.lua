@@ -37,3 +37,21 @@ end, { desc = "LSP: Hover documentation" })
 vim.keymap.set({ "i", "n", "v" }, "<A-p>", function()
   if lsp.signature_help then lsp.signature_help() end
 end, { desc = "LSP: Signature help" })
+
+local function close_tab_or_buffer()
+  if #vim.api.nvim_list_tabpages() > 1 then
+    vim.cmd("tabclose")
+    return
+  end
+
+  local ok_snacks, snacks = pcall(require, "snacks")
+  if ok_snacks and snacks.bufdelete then
+    snacks.bufdelete()
+    return
+  end
+
+  vim.cmd("bdelete")
+end
+
+vim.keymap.set("n", "<leader><tab>d", close_tab_or_buffer, { desc = "Close tab or buffer" })
+vim.keymap.set("n", "<C-x>", close_tab_or_buffer, { desc = "Close tab or buffer" })
