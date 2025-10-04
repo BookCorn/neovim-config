@@ -23,4 +23,12 @@ return {
       vim.cmd.colorscheme("catppuccin-macchiato")
     end,
   },
+  {
+    "vyfor/cord.nvim",
+    build = ":Cord update",
+    event = "VeryLazy",
+    config = function()
+      require("cord").setup({})
+    end,
+  },
 }

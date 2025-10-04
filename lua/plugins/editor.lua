@@ -81,8 +81,10 @@ return {
         local line = vim.api.nvim_get_current_line()
         local prev = col > 0 and line:sub(col, col) or ""
         local next = line:sub(col + 1, col + 1)
-        if pairs[prev] == next then
-          return require("mini.pairs").cr()
+        if pairs[prev] and (next == pairs[prev]) then
+          local newline = vim.api.nvim_replace_termcodes("<CR>", true, true, true)
+          local shift = vim.api.nvim_replace_termcodes("<C-o>>", true, true, true)
+          return newline .. shift
         end
         return vim.api.nvim_replace_termcodes("<CR>", true, true, true)
       end
@@ -91,6 +93,57 @@ return {
         replace_keycodes = false,
         desc = "Smart newline inside pairs",
       })
+    end,
+  },
+  {
+    "nvim-mini/mini.surround",
+    enabled = false,
+  },
+  {
+    "kylechui/nvim-surround",
+    version = "*",
+    event = "VeryLazy",
+    config = function()
+      require("nvim-surround").setup({})
+    end,
+  },
+  {
+    "sustech-data/wildfire.nvim",
+    event = "VeryLazy",
+    dependencies = { "nvim-treesitter/nvim-treesitter" },
+    config = function()
+      local function setup()
+        local loader = require("lazy.core.loader")
+        loader.load("nvim-treesitter", { source = "wildfire.nvim" })
+
+        local parser_mod_ok, parser_mod = pcall(require, "nvim-treesitter.parsers")
+        if parser_mod_ok and type(parser_mod.get_parser) ~= "function" then
+          local ts = vim.treesitter
+          parser_mod.get_parser = function(bufnr, lang, opts)
+            bufnr = bufnr or vim.api.nvim_get_current_buf()
+            local ok, parser = pcall(ts.get_parser, bufnr, lang, opts)
+            if ok then
+              return parser
+            end
+            return nil
+          end
+        end
+
+        local ok_ts = pcall(require, "nvim-treesitter.ts_utils")
+        if not ok_ts then
+          LazyVim.warn("wildfire.nvim requires nvim-treesitter. Install or update nvim-treesitter to use wildfire selection.", {
+            title = "wildfire.nvim",
+          })
+          return
+        end
+        require("wildfire").setup({})
+      end
+
+      if package.loaded["nvim-treesitter"] or pcall(require, "nvim-treesitter.configs") then
+        setup()
+      else
+        LazyVim.on_load("nvim-treesitter", setup)
+      end
     end,
   },
   {
