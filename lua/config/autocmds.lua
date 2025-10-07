@@ -6,3 +6,18 @@
 --
 -- Or remove existing autocmds by their group name (which is prefixed with `lazyvim_` for the defaults)
 -- e.g. vim.api.nvim_del_augroup_by_name("lazyvim_wrap_spell")
+
+local Util_ok, Util = pcall(require, "lazyvim.util")
+if Util_ok then
+  Util.on_very_lazy(function()
+    vim.opt.smoothscroll = false
+  end)
+else
+  vim.api.nvim_create_autocmd("User", {
+    pattern = "VeryLazy",
+    once = true,
+    callback = function()
+      vim.opt.smoothscroll = false
+    end,
+  })
+end
