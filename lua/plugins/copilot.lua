@@ -1,6 +1,7 @@
 return {
   {
     "zbirenbaum/copilot.lua",
+    enabled = false,
     cmd = "Copilot",
     build = ":Copilot auth",
     event = "InsertEnter",
@@ -27,6 +28,7 @@ return {
   },
   {
     "zbirenbaum/copilot.lua",
+    enabled = false,
     opts = function()
       vim.keymap.set("i", "<C-l>", function()
         local ok, suggestion = pcall(require, "copilot.suggestion")
@@ -40,6 +42,7 @@ return {
   },
   {
     "saghen/blink.cmp",
+    enabled = false,
     optional = true,
     dependencies = { "fang2hou/blink-copilot" },
     opts = function(_, opts)

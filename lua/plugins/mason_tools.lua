@@ -5,13 +5,10 @@ return {
       {
         "WhoIsSethDaniel/mason-tool-installer.nvim",
         opts = {
-          ensure_installed = {
-            "css-lsp",
-            "html-lsp",
-            "json-lsp",
-          },
+          -- Server profile: do not auto-install tools
+          ensure_installed = {},
           auto_update = false,
-          run_on_start = true,
+          run_on_start = false,
         },
         config = function(_, opts)
           require("mason-tool-installer").setup(opts)

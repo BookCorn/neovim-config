@@ -5,31 +5,9 @@ return {
     opts = function(_, opts)
       opts = opts or {}
 
-      -- Baseline servers that install without language-specific toolchains
-      local servers = {
-        html = {},
-        cssls = {},
-        jsonls = {},
-        eslint = {},
-        tsserver = {},
-        tailwindcss = {},
-        emmet_ls = {
-          filetypes = {
-            "html",
-            "css",
-            "javascript",
-            "javascriptreact",
-            "typescript",
-            "typescriptreact",
-            "svelte",
-            "vue",
-            "astro",
-          },
-        },
-        svelte = {},
-        volar = {},
-        astro = {},
-      }
+      -- Server profile: keep LSP empty by default on servers
+      -- Users can still add via `vim.g.extra_lsp_servers`
+      local servers = {}
 
       local function is_list(value)
         if vim.tbl_islist then
@@ -66,7 +44,8 @@ return {
         end
       end
 
-      opts.servers = vim.tbl_deep_extend("force", servers, opts.servers or {})
+      -- On server profile, override defaults instead of merging to avoid auto-installs
+      opts.servers = servers
 
       -- Diagnostics UI and behavior
       opts.diagnostics = vim.tbl_deep_extend("force", opts.diagnostics or {}, {

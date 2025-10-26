@@ -25,25 +25,13 @@ return {
       return conf
     end
 
-    -- Apply to declared servers
+    -- Apply to declared servers (do not add new servers on server profile)
     for name, conf in pairs(opts.servers) do
       opts.servers[name] = ensure_flags(conf)
     end
 
-    -- Add common servers if not already declared (safe no-op if present)
-    local common = { "rust_analyzer", "jdtls", "gopls", "pyright", "clangd" }
-    for _, name in ipairs(common) do
-      opts.servers[name] = ensure_flags(opts.servers[name])
-    end
-
-    -- 3) Rust: make sure semantic diagnostics are enabled
-    opts.servers.rust_analyzer = vim.tbl_deep_extend("force", opts.servers.rust_analyzer or {}, {
-      settings = {
-        ["rust-analyzer"] = {
-          diagnostics = { enable = true },
-        },
-      },
-    })
+    -- Intentionally do not add extra language servers here to keep the server
+    -- profile lean and avoid implicit toolchain installs.
 
     -- Optional: quick toggle for live diagnostics
     if not vim.g.__live_diag_toggle_defined then
@@ -59,4 +47,3 @@ return {
     return opts
   end,
 }
-
