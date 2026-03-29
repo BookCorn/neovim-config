@@ -57,38 +57,9 @@ return {
     end,
     config = function(_, opts)
       LazyVim.mini.pairs(opts)
-      local pairs = { ["("] = ")", ["{"] = "}", ["["] = "]" }
-      local function smart_cr()
-        -- blink.cmp completion
-        local ok_blink, blink = pcall(require, "blink.cmp")
-        if ok_blink and blink.is_visible() then
-          blink.select_and_accept()
-          return ""
-        end
-
-        -- nvim-cmp completion
-        local ok_cmp, cmp = pcall(require, "cmp")
-        if ok_cmp and cmp.visible() then
-          cmp.confirm({ select = true })
-          return ""
-        end
-
-        if vim.fn.pumvisible() == 1 then
-          return vim.api.nvim_replace_termcodes("<C-y>", true, true, true)
-        end
-
-        local col = vim.api.nvim_win_get_cursor(0)[2]
-        local line = vim.api.nvim_get_current_line()
-        local prev = col > 0 and line:sub(col, col) or ""
-        local next = line:sub(col + 1, col + 1)
-        if pairs[prev] and (next == pairs[prev]) then
-          local newline = vim.api.nvim_replace_termcodes("<CR>", true, true, true)
-          local shift = vim.api.nvim_replace_termcodes("<C-o>>", true, true, true)
-          return newline .. shift
-        end
-        return vim.api.nvim_replace_termcodes("<CR>", true, true, true)
-      end
-      vim.keymap.set("i", "<CR>", smart_cr, {
+      vim.keymap.set("i", "<CR>", function()
+        return require("config.smart_enter").expr()
+      end, {
         expr = true,
         replace_keycodes = false,
         desc = "Smart newline inside pairs",

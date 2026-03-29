@@ -74,13 +74,6 @@ return {
       feed("<Tab>")
     end
 
-    local function map_cr_accept_or_newline()
-      if accept_cmp() then
-        return
-      end
-      feed("<CR>")
-    end
-
     local function map_accept_on_ctrl_y()
       if accept_cmp() then
         return
@@ -108,7 +101,13 @@ return {
 
     -- Set explicit mappings in insert/select mode
     vim.keymap.set({ "i", "s" }, "<Tab>", map_tab, { desc = "Accept completion or Copilot suggestion" })
-    vim.keymap.set({ "i", "s" }, "<CR>", map_cr_accept_or_newline, { desc = "Accept completion or newline" })
+    vim.keymap.set({ "i", "s" }, "<CR>", function()
+      return require("config.smart_enter").expr()
+    end, {
+      expr = true,
+      replace_keycodes = false,
+      desc = "Accept completion or smart newline",
+    })
     vim.keymap.set({ "i", "s" }, "<C-y>", map_accept_on_ctrl_y, { desc = "Accept completion" })
     vim.keymap.set({ "i", "s" }, "<C-Space>", function()
       local ok, cmp = pcall(require, "blink.cmp")
