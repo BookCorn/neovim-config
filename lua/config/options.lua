@@ -4,6 +4,10 @@
 vim.o.completeopt = "menu,menuone,noselect"
 vim.o.shortmess = vim.o.shortmess .. "c"
 
+local termfeatures = vim.g.termfeatures or {}
+termfeatures.osc52 = false
+vim.g.termfeatures = termfeatures
+
 -- keep Neovim clipboard separate from system clipboard; use `"+` register when needed
 vim.opt.clipboard = {}
 vim.opt.smoothscroll = false
