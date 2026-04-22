@@ -1,3 +1,3 @@
-# 💤 LazyVim
+# Neovim
 
-This is a [Neovim](https://neovim.io/) derived from the LazyVim framework.
+This configuration uses Neovim 0.12's built-in `vim.pack` plugin manager.

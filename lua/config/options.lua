@@ -1,10 +1,63 @@
--- Options are automatically loaded before lazy.nvim startup
--- Default options that are always set: https://github.com/LazyVim/LazyVim/blob/main/lua/lazyvim/config/options.lua
--- Add any additional options here
-vim.o.completeopt = "menu,menuone,noselect"
-vim.o.shortmess = vim.o.shortmess .. "c"
+vim.g.autoformat = true
+vim.g.markdown_recommended_style = 0
 
--- keep Neovim clipboard separate from system clipboard; use `"+` register when needed
-vim.opt.clipboard = {}
-vim.opt.smoothscroll = false
-vim.g.snacks_scroll = false
+local opt = vim.opt
+
+opt.autowrite = true
+opt.clipboard = {}
+opt.completeopt = "menu,menuone,noselect"
+opt.conceallevel = 2
+opt.confirm = true
+opt.cursorline = true
+opt.expandtab = true
+opt.fillchars = {
+  foldopen = "v",
+  foldclose = ">",
+  fold = " ",
+  foldsep = " ",
+  diff = "/",
+  eob = " ",
+}
+opt.foldlevel = 99
+opt.foldmethod = "indent"
+opt.foldtext = ""
+opt.formatoptions = "jcroqlnt"
+opt.grepformat = "%f:%l:%c:%m"
+opt.grepprg = "rg --vimgrep"
+opt.ignorecase = true
+opt.inccommand = "nosplit"
+opt.jumpoptions = "view"
+opt.laststatus = 3
+opt.linebreak = true
+opt.list = true
+opt.mouse = "a"
+opt.number = true
+opt.pumblend = 10
+opt.pumheight = 10
+opt.relativenumber = true
+opt.ruler = false
+opt.scrolloff = 4
+opt.sessionoptions = { "buffers", "curdir", "tabpages", "winsize", "help", "globals", "skiprtp", "folds" }
+opt.shiftround = true
+opt.shiftwidth = 2
+opt.shortmess:append({ W = true, I = true, c = true, C = true })
+opt.showmode = false
+opt.sidescrolloff = 8
+opt.signcolumn = "yes"
+opt.smartcase = true
+opt.smartindent = true
+opt.smoothscroll = false
+opt.spelllang = { "en" }
+opt.splitbelow = true
+opt.splitkeep = "screen"
+opt.splitright = true
+opt.tabstop = 2
+opt.termguicolors = true
+opt.timeoutlen = 300
+opt.undofile = true
+opt.undolevels = 10000
+opt.updatetime = 200
+opt.virtualedit = "block"
+opt.wildmode = "longest:full,full"
+opt.winminwidth = 5
+opt.wrap = false
