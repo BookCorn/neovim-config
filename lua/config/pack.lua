@@ -2,7 +2,7 @@ local function gh(repo)
   return "https://github.com/" .. repo
 end
 
-vim.pack.add({
+local specs = {
   gh("folke/which-key.nvim"),
   gh("lewis6991/gitsigns.nvim"),
   gh("folke/flash.nvim"),
@@ -50,6 +50,10 @@ vim.pack.add({
   gh("marilari88/neotest-vitest"),
   gh("rcasia/neotest-java"),
   gh("nvim-neotest/neotest-vim-test"),
+}
+
+vim.pack.add(specs, {
+  load = function() end,
 })
 
 local markdown_preview_app = vim.fs.joinpath(
@@ -95,7 +99,11 @@ local function ensure_markdown_preview_deps()
   end)
 end
 
-ensure_markdown_preview_deps()
+if vim.fn.exists(":MarkdownPreviewInstallDeps") == 0 then
+  vim.api.nvim_create_user_command("MarkdownPreviewInstallDeps", ensure_markdown_preview_deps, {
+    desc = "Install markdown-preview.nvim browser preview dependencies",
+  })
+end
 
 if vim.fn.exists(":PackUpdate") == 0 then
   vim.api.nvim_create_user_command("PackUpdate", function()

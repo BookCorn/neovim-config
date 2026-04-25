@@ -1,4 +1,33 @@
 local M = {}
+local loaded_plugins = {}
+local initialized = {}
+
+local function load_plugin(name)
+  if loaded_plugins[name] then
+    return true
+  end
+
+  local ok, err = pcall(vim.cmd.packadd, name)
+  if not ok then
+    vim.schedule(function()
+      vim.notify("Failed to load plugin " .. name .. ": " .. err, vim.log.levels.ERROR)
+    end)
+    return false
+  end
+
+  loaded_plugins[name] = true
+  return true
+end
+
+local function once(name, fn)
+  if initialized[name] then
+    return true
+  end
+
+  initialized[name] = true
+  fn()
+  return true
+end
 
 local function safe_require(name)
   local ok, module = pcall(require, name)
@@ -72,6 +101,7 @@ local function add_adapter(adapters, name, factory)
 end
 
 local function setup_which_key()
+  load_plugin("which-key.nvim")
   local which_key = safe_require("which-key")
   if not which_key then
     return
@@ -83,6 +113,7 @@ local function setup_which_key()
 end
 
 local function setup_gitsigns()
+  load_plugin("gitsigns.nvim")
   local gitsigns = safe_require("gitsigns")
   if not gitsigns then
     return
@@ -149,6 +180,7 @@ local function setup_gitsigns()
 end
 
 local function setup_flash()
+  load_plugin("flash.nvim")
   local flash = safe_require("flash")
   if not flash then
     return
@@ -182,6 +214,7 @@ local function setup_flash()
 end
 
 local function setup_ui()
+  load_plugin("catppuccin")
   local catppuccin = safe_require("catppuccin")
   if catppuccin then
     catppuccin.setup({
@@ -199,16 +232,15 @@ local function setup_ui()
     })
   end
 
+  load_plugin("gruvbox.nvim")
   local gruvbox = safe_require("gruvbox")
   if gruvbox then
     gruvbox.setup({})
   end
 
-  local nvim_tree = safe_require("nvim-tree")
-  if nvim_tree then
-    nvim_tree.setup({})
-  end
-
+  load_plugin("nvim-web-devicons")
+  load_plugin("bufferline.nvim")
+  load_plugin("lualine.nvim")
   local bufferline = safe_require("bufferline")
   if bufferline then
     bufferline.setup({
@@ -231,13 +263,42 @@ local function setup_ui()
 
   require("config.theme").setup()
 
-  local cord = safe_require("cord")
-  if cord then
-    cord.setup({})
+  vim.api.nvim_create_autocmd("VimEnter", {
+    once = true,
+    callback = function()
+      if #vim.api.nvim_list_uis() == 0 then
+        return
+      end
+      load_plugin("cord.nvim")
+      local cord = safe_require("cord")
+      if cord then
+        cord.setup({})
+      end
+    end,
+  })
+end
+
+local function setup_nvim_tree_command()
+  if vim.fn.exists(":NvimTreeToggle") ~= 0 then
+    return
   end
+
+  vim.api.nvim_create_user_command("NvimTreeToggle", function()
+    pcall(vim.api.nvim_del_user_command, "NvimTreeToggle")
+    load_plugin("nvim-web-devicons")
+    load_plugin("nvim-tree.lua")
+    local nvim_tree = safe_require("nvim-tree")
+    if nvim_tree then
+      nvim_tree.setup({})
+    end
+    vim.cmd.NvimTreeToggle()
+  end, { desc = "Toggle file explorer" })
 end
 
 local function setup_blink()
+  load_plugin("blink.cmp")
+  load_plugin("blink-copilot")
+  load_plugin("friendly-snippets")
   local blink = safe_require("blink.cmp")
   if not blink then
     return
@@ -358,6 +419,7 @@ local function setup_blink()
 end
 
 local function setup_copilot()
+  load_plugin("copilot.lua")
   local copilot = safe_require("copilot")
   if not copilot then
     return
@@ -395,38 +457,70 @@ local function setup_copilot()
 end
 
 local function setup_editor()
-  local refactoring = safe_require("refactoring")
-  if refactoring then
-    refactoring.setup({})
-    vim.keymap.set("v", "<leader>re", function()
+  vim.keymap.set("n", "<leader>uu", function()
+    load_plugin("undotree")
+    vim.cmd.UndotreeToggle()
+  end, { desc = "Toggle undotree" })
+
+  vim.keymap.set("v", "<leader>re", function()
+    once("refactoring", function()
+      load_plugin("plenary.nvim")
+      load_plugin("nvim-treesitter")
+      load_plugin("refactoring.nvim")
+      local refactoring = safe_require("refactoring")
+      if refactoring then
+        refactoring.setup({})
+      end
+    end)
+
+    local refactoring = safe_require("refactoring")
+    if refactoring then
       refactoring.select_refactor()
-    end, { desc = "Refactor (select)" })
-  end
+    end
+  end, { desc = "Refactor (select)" })
 
-  local colorizer = safe_require("colorizer")
-  if colorizer then
-    colorizer.setup({
-      filetypes = {
-        "css",
-        "scss",
-        "sass",
-        "html",
-        "javascript",
-        "javascriptreact",
-        "typescript",
-        "typescriptreact",
-        "svelte",
-        "vue",
-        "astro",
-      },
-      user_default_options = {
-        tailwind = true,
-      },
-    })
-  end
+  vim.api.nvim_create_autocmd("FileType", {
+    pattern = {
+      "css",
+      "scss",
+      "sass",
+      "html",
+      "javascript",
+      "javascriptreact",
+      "typescript",
+      "typescriptreact",
+      "svelte",
+      "vue",
+      "astro",
+    },
+    once = true,
+    callback = function()
+      load_plugin("nvim-colorizer.lua")
+      local colorizer = safe_require("colorizer")
+      if colorizer then
+        colorizer.setup({
+          filetypes = {
+            "css",
+            "scss",
+            "sass",
+            "html",
+            "javascript",
+            "javascriptreact",
+            "typescript",
+            "typescriptreact",
+            "svelte",
+            "vue",
+            "astro",
+          },
+          user_default_options = {
+            tailwind = true,
+          },
+        })
+      end
+    end,
+  })
 
-  vim.keymap.set("n", "<leader>uu", "<cmd>UndotreeToggle<CR>", { desc = "Toggle undotree" })
-
+  load_plugin("mini.pairs")
   local mini_pairs = safe_require("mini.pairs")
   if mini_pairs then
     mini_pairs.setup({
@@ -445,16 +539,19 @@ local function setup_editor()
     })
   end
 
+  load_plugin("nvim-surround")
   local surround = safe_require("nvim-surround")
   if surround then
     surround.setup({})
   end
 
+  load_plugin("wildfire.nvim")
   local wildfire = safe_require("wildfire")
   if wildfire then
     wildfire.setup({})
   end
 
+  load_plugin("multiple-cursors.nvim")
   local mc = safe_require("multiple-cursors")
   if mc then
     mc.setup({})
@@ -578,6 +675,7 @@ local function setup_editor()
 end
 
 local function setup_yanky()
+  load_plugin("yanky.nvim")
   local yanky = safe_require("yanky")
   if not yanky then
     return
@@ -609,6 +707,7 @@ local function setup_yanky()
 end
 
 local function setup_conform()
+  load_plugin("conform.nvim")
   local conform = safe_require("conform")
   if not conform then
     return
@@ -678,6 +777,8 @@ local function setup_conform()
 end
 
 local function setup_telescope()
+  load_plugin("plenary.nvim")
+  load_plugin("telescope.nvim")
   local telescope = safe_require("telescope")
   if not telescope then
     return
@@ -709,54 +810,91 @@ local function setup_telescope()
 end
 
 local function setup_goto_preview()
-  local goto_preview = safe_require("goto-preview")
-  if not goto_preview then
-    return
+  local function ensure_goto_preview()
+    once("goto-preview", function()
+      load_plugin("goto-preview")
+      local goto_preview = safe_require("goto-preview")
+      if not goto_preview then
+        return
+      end
+
+      goto_preview.setup({
+        default_mappings = false,
+        focus_on_open = true,
+        dismiss_on_move = true,
+        resizing_mappings = false,
+        opacity = nil,
+        height = 20,
+        width = 80,
+        border = { "+", "-", "+", "|", "+", "-", "+", "|" },
+      })
+    end)
+    return safe_require("goto-preview")
   end
 
-  goto_preview.setup({
-    default_mappings = false,
-    focus_on_open = true,
-    dismiss_on_move = true,
-    resizing_mappings = false,
-    opacity = nil,
-    height = 20,
-    width = 80,
-    border = { "+", "-", "+", "|", "+", "-", "+", "|" },
-  })
-
-  vim.keymap.set("n", "<A-d>", goto_preview.goto_preview_definition, { desc = "Preview definition" })
-  vim.keymap.set("n", "<A-D>", goto_preview.goto_preview_type_definition, { desc = "Preview type definition" })
-  vim.keymap.set("n", "<A-Esc>", goto_preview.close_all_win, { desc = "Close all previews" })
+  vim.keymap.set("n", "<A-d>", function()
+    local goto_preview = ensure_goto_preview()
+    if goto_preview then
+      goto_preview.goto_preview_definition()
+    end
+  end, { desc = "Preview definition" })
+  vim.keymap.set("n", "<A-D>", function()
+    local goto_preview = ensure_goto_preview()
+    if goto_preview then
+      goto_preview.goto_preview_type_definition()
+    end
+  end, { desc = "Preview type definition" })
+  vim.keymap.set("n", "<A-Esc>", function()
+    local goto_preview = ensure_goto_preview()
+    if goto_preview then
+      goto_preview.close_all_win()
+    end
+  end, { desc = "Close all previews" })
 end
 
 local function setup_markdown()
-  local render_markdown = safe_require("render-markdown")
-  if render_markdown then
-    render_markdown.setup({
-      file_types = { "markdown" },
-      render_modes = { "nvim" },
-      heading = { enabled = true },
-      code = { enabled = true },
-      bullet = { enabled = true },
-      pipe_table = { enabled = true },
-    })
+  vim.api.nvim_create_autocmd("FileType", {
+    pattern = { "markdown" },
+    once = true,
+    callback = function()
+      load_plugin("render-markdown.nvim")
+      local render_markdown = safe_require("render-markdown")
+      if render_markdown then
+        render_markdown.setup({
+          file_types = { "markdown" },
+          render_modes = { "nvim" },
+          heading = { enabled = true },
+          code = { enabled = true },
+          bullet = { enabled = true },
+          pipe_table = { enabled = true },
+        })
+      end
+    end,
+  })
 
-    vim.keymap.set("n", "<leader>um", function()
+  vim.keymap.set("n", "<leader>um", function()
+    load_plugin("render-markdown.nvim")
+    local render_markdown = safe_require("render-markdown")
+    if render_markdown then
       render_markdown.toggle()
-    end, { desc = "Markdown: Toggle inline render" })
-  end
+    end
+  end, { desc = "Markdown: Toggle inline render" })
 
   vim.g.mkdp_auto_close = 0
-  vim.keymap.set("n", "<leader>mp", "<cmd>MarkdownPreviewToggle<CR>", { desc = "Markdown: Browser preview" })
+  vim.keymap.set("n", "<leader>mp", function()
+    load_plugin("markdown-preview.nvim")
+    vim.cmd.MarkdownPreviewToggle()
+  end, { desc = "Markdown: Browser preview" })
 end
 
 local function setup_mason()
+  load_plugin("mason.nvim")
   local mason = safe_require("mason")
   if mason then
     mason.setup({})
   end
 
+  load_plugin("mason-tool-installer.nvim")
   local mason_tool_installer = safe_require("mason-tool-installer")
   if mason_tool_installer then
     mason_tool_installer.setup({
@@ -767,12 +905,47 @@ local function setup_mason()
         "json-lsp",
       },
       auto_update = false,
-      run_on_start = true,
+      run_on_start = false,
     })
   end
 end
 
+local function setup_mason_commands()
+  local function command(name)
+    if vim.fn.exists(":" .. name) ~= 0 then
+      return
+    end
+
+    vim.api.nvim_create_user_command(name, function(opts)
+      pcall(vim.api.nvim_del_user_command, name)
+      setup_mason()
+      local bang = opts.bang and "!" or ""
+      local args = opts.args ~= "" and (" " .. opts.args) or ""
+      vim.cmd(name .. bang .. args)
+    end, {
+      bang = true,
+      nargs = "*",
+      desc = "Load Mason and run :" .. name,
+    })
+  end
+
+  command("Mason")
+  command("MasonToolsInstall")
+  command("MasonToolsInstallSync")
+  command("MasonToolsUpdate")
+  command("MasonToolsUpdateSync")
+  command("MasonToolsClean")
+end
+
 local function setup_lsp()
+  load_plugin("nvim-lspconfig")
+
+  local mason_bin = vim.fs.joinpath(vim.fn.stdpath("data"), "mason", "bin")
+  local path = vim.env.PATH or ""
+  if vim.fn.isdirectory(mason_bin) == 1 and not path:find(mason_bin, 1, true) then
+    vim.env.PATH = mason_bin .. ":" .. path
+  end
+
   vim.diagnostic.config({
     update_in_insert = true,
     severity_sort = true,
@@ -784,6 +957,11 @@ local function setup_lsp()
   local ok_blink, blink = pcall(require, "blink.cmp")
   if ok_blink and blink.get_lsp_capabilities then
     capabilities = blink.get_lsp_capabilities(capabilities)
+  else
+    capabilities.textDocument.completion.completionItem.snippetSupport = true
+    capabilities.textDocument.completion.completionItem.resolveSupport = {
+      properties = { "documentation", "detail", "additionalTextEdits" },
+    }
   end
 
   local servers = {
@@ -863,6 +1041,7 @@ local function setup_lsp()
 end
 
 local function setup_treesitter()
+  load_plugin("nvim-treesitter")
   local treesitter = safe_require("nvim-treesitter")
   if not treesitter then
     return
@@ -892,7 +1071,29 @@ local function setup_treesitter()
     install_dir = vim.fn.stdpath("data") .. "/site",
   })
 
-  treesitter.install(languages)
+  if vim.fn.exists(":TSInstallConfigured") == 0 then
+    vim.api.nvim_create_user_command("TSInstallConfigured", function(opts)
+      local task = treesitter.install(languages)
+      if opts.bang and task and task.wait then
+        task:wait(300000)
+      end
+    end, {
+      bang = true,
+      desc = "Install configured Treesitter parsers; use ! to wait for completion",
+    })
+  end
+
+  if vim.fn.exists(":TSUpdateConfigured") == 0 then
+    vim.api.nvim_create_user_command("TSUpdateConfigured", function(opts)
+      local task = treesitter.update(languages)
+      if opts.bang and task and task.wait then
+        task:wait(300000)
+      end
+    end, {
+      bang = true,
+      desc = "Update configured Treesitter parsers; use ! to wait for completion",
+    })
+  end
 
   local group = vim.api.nvim_create_augroup("TreesitterRuntimeSetup", { clear = true })
   vim.api.nvim_create_autocmd("FileType", {
@@ -922,7 +1123,13 @@ local function setup_treesitter()
   })
 end
 
-local function setup_code_runner()
+local function ensure_code_runner()
+  if initialized.code_runner then
+    return
+  end
+  initialized.code_runner = true
+
+  load_plugin("code_runner.nvim")
   local code_runner = safe_require("code_runner")
   if not code_runner then
     return
@@ -1009,14 +1216,37 @@ local function setup_code_runner()
       ]],
     },
   })
-
-  vim.keymap.set("n", "<F5>", "<cmd>RunCode<CR>", { noremap = true, silent = true, desc = "Run code" })
 end
 
-local function setup_neotest()
+local function setup_code_runner()
+  vim.keymap.set("n", "<F5>", function()
+    ensure_code_runner()
+    vim.cmd.RunCode()
+  end, { noremap = true, silent = true, desc = "Run code" })
+end
+
+local function ensure_neotest()
+  if initialized.neotest then
+    return safe_require("neotest")
+  end
+  initialized.neotest = true
+
+  load_plugin("plenary.nvim")
+  load_plugin("nvim-nio")
+  load_plugin("FixCursorHold.nvim")
+  load_plugin("neotest")
+  load_plugin("neotest-go")
+  load_plugin("neotest-python")
+  load_plugin("neotest-rust")
+  load_plugin("neotest-plenary")
+  load_plugin("neotest-jest")
+  load_plugin("neotest-vitest")
+  load_plugin("neotest-java")
+  load_plugin("neotest-vim-test")
+
   local neotest = safe_require("neotest")
   if not neotest then
-    return
+    return nil
   end
 
   local adapters = {}
@@ -1128,25 +1358,53 @@ local function setup_neotest()
   end)
 
   neotest.setup({ adapters = adapters })
+  return neotest
+end
 
+local function setup_neotest()
   vim.keymap.set("n", "<leader>tt", function()
+    local neotest = ensure_neotest()
+    if not neotest then
+      return
+    end
     neotest.run.run()
   end, { desc = "Test nearest" })
   vim.keymap.set("n", "<leader>tf", function()
+    local neotest = ensure_neotest()
+    if not neotest then
+      return
+    end
     neotest.run.run(vim.fn.expand("%"))
   end, { desc = "Test file" })
   vim.keymap.set("n", "<leader>ts", function()
+    local neotest = ensure_neotest()
+    if not neotest then
+      return
+    end
     neotest.summary.toggle()
   end, { desc = "Test summary" })
   vim.keymap.set("n", "<leader>to", function()
+    local neotest = ensure_neotest()
+    if not neotest then
+      return
+    end
     neotest.output.open({ enter = true })
   end, { desc = "Test output" })
   vim.keymap.set("n", "<leader>tS", function()
+    local neotest = ensure_neotest()
+    if not neotest then
+      return
+    end
     neotest.run.stop()
   end, { desc = "Test stop" })
 end
 
 local function setup_leetcode()
+  load_plugin("plenary.nvim")
+  load_plugin("nui.nvim")
+  load_plugin("telescope.nvim")
+  load_plugin("leetcode.nvim")
+
   local leetcode = safe_require("leetcode")
   if not leetcode then
     return
@@ -1166,25 +1424,57 @@ local function setup_leetcode()
   })
 end
 
+local function setup_leetcode_command()
+  if vim.fn.exists(":Leet") ~= 0 then
+    return
+  end
+
+  vim.api.nvim_create_user_command("Leet", function(opts)
+    pcall(vim.api.nvim_del_user_command, "Leet")
+    setup_leetcode()
+    local args = opts.args ~= "" and (" " .. opts.args) or ""
+    vim.cmd("Leet" .. args)
+  end, {
+    nargs = "*",
+    desc = "Load leetcode.nvim and run :Leet",
+  })
+end
+
 function M.setup()
   setup_which_key()
   setup_gitsigns()
   setup_flash()
   setup_ui()
-  setup_blink()
-  setup_copilot()
+  setup_nvim_tree_command()
+  vim.api.nvim_create_autocmd("InsertEnter", {
+    once = true,
+    callback = function()
+      setup_blink()
+      setup_copilot()
+    end,
+  })
   setup_editor()
   setup_yanky()
-  setup_conform()
-  setup_telescope()
   setup_goto_preview()
   setup_markdown()
-  setup_mason()
+  setup_mason_commands()
   setup_lsp()
   setup_treesitter()
   setup_code_runner()
   setup_neotest()
-  setup_leetcode()
+  setup_leetcode_command()
+end
+
+function M.ensure_telescope()
+  once("telescope", setup_telescope)
+end
+
+function M.ensure_conform()
+  once("conform", setup_conform)
+end
+
+function M.load_plugin(name)
+  return load_plugin(name)
 end
 
 M.setup()

@@ -46,6 +46,11 @@ local lsp = vim.lsp.buf
 
 local function telescope_builtin(name, opts)
   return function()
+    local ok_plugins, plugins = pcall(require, "config.plugins")
+    if ok_plugins and plugins.ensure_telescope then
+      plugins.ensure_telescope()
+    end
+
     local ok, builtin = pcall(require, "telescope.builtin")
     if not ok then
       vim.notify("telescope.nvim is not available", vim.log.levels.WARN)
@@ -140,6 +145,11 @@ map("n", "<leader>sk", function()
 end, { desc = "Search Keymaps" })
 
 map({ "n", "x" }, "<leader>cf", function()
+  local ok_plugins, plugins = pcall(require, "config.plugins")
+  if ok_plugins and plugins.ensure_conform then
+    plugins.ensure_conform()
+  end
+
   local ok, conform = pcall(require, "conform")
   if ok then
     conform.format({ async = true, lsp_format = "fallback" })
