@@ -42,7 +42,13 @@ local function diagnostic_jump(next, severity)
 end
 
 local map = vim.keymap.set
-local lsp = vim.lsp.buf
+
+local function lsp_call(name)
+  local fn = vim.lsp.buf[name]
+  if fn then
+    fn()
+  end
+end
 
 local function telescope_builtin(name, opts)
   return function()
@@ -189,59 +195,37 @@ map("n", "<C-w><space>", function()
 end, { desc = "Window Hydra Mode (which-key)" })
 
 map("n", "<A-b>", function()
-  if lsp.definition then
-    lsp.definition()
-  end
+  lsp_call("definition")
 end, { desc = "LSP: Go to definition" })
 map("n", "gd", function()
-  if lsp.definition then
-    lsp.definition()
-  end
+  lsp_call("definition")
 end, { desc = "LSP: Go to definition" })
 map("n", "gD", function()
-  if lsp.declaration then
-    lsp.declaration()
-  end
+  lsp_call("declaration")
 end, { desc = "LSP: Go to declaration" })
 map("n", "<A-r>", function()
-  if lsp.references then
-    lsp.references()
-  end
+  lsp_call("references")
 end, { desc = "LSP: Find references" })
 map("n", "gR", function()
-  if lsp.references then
-    lsp.references()
-  end
+  lsp_call("references")
 end, { desc = "LSP: Find references" })
 map("n", "<A-i>", function()
-  if lsp.implementation then
-    lsp.implementation()
-  end
+  lsp_call("implementation")
 end, { desc = "LSP: Go to implementation" })
 map("n", "gi", function()
-  if lsp.implementation then
-    lsp.implementation()
-  end
+  lsp_call("implementation")
 end, { desc = "LSP: Go to implementation" })
 map("n", "<A-t>", function()
-  if lsp.type_definition then
-    lsp.type_definition()
-  end
+  lsp_call("type_definition")
 end, { desc = "LSP: Go to type definition" })
 map("n", "gy", function()
-  if lsp.type_definition then
-    lsp.type_definition()
-  end
+  lsp_call("type_definition")
 end, { desc = "LSP: Go to type definition" })
 map({ "n", "v" }, "K", function()
-  if lsp.hover then
-    lsp.hover()
-  end
+  lsp_call("hover")
 end, { desc = "LSP: Hover documentation" })
 map({ "i", "n", "v" }, "<A-p>", function()
-  if lsp.signature_help then
-    lsp.signature_help()
-  end
+  lsp_call("signature_help")
 end, { desc = "LSP: Signature help" })
 
 map("n", "<leader>-", "<C-w>s", { desc = "Split Window Below", remap = true })

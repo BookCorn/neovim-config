@@ -180,36 +180,55 @@ local function setup_gitsigns()
 end
 
 local function setup_flash()
-  load_plugin("flash.nvim")
-  local flash = safe_require("flash")
-  if not flash then
-    return
+  local function with_flash(callback)
+    once("flash", function()
+      load_plugin("flash.nvim")
+      local flash = safe_require("flash")
+      if flash then
+        flash.setup({})
+      end
+    end)
+
+    local flash = safe_require("flash")
+    if flash then
+      callback(flash)
+    end
   end
 
-  flash.setup({})
-
   vim.keymap.set({ "n", "x", "o" }, "s", function()
-    flash.jump()
+    with_flash(function(flash)
+      flash.jump()
+    end)
   end, { desc = "Flash" })
   vim.keymap.set({ "n", "o", "x" }, "S", function()
-    flash.treesitter()
+    with_flash(function(flash)
+      flash.treesitter()
+    end)
   end, { desc = "Flash Treesitter" })
   vim.keymap.set("o", "r", function()
-    flash.remote()
+    with_flash(function(flash)
+      flash.remote()
+    end)
   end, { desc = "Remote Flash" })
   vim.keymap.set({ "o", "x" }, "R", function()
-    flash.treesitter_search()
+    with_flash(function(flash)
+      flash.treesitter_search()
+    end)
   end, { desc = "Treesitter Search" })
   vim.keymap.set("c", "<C-s>", function()
-    flash.toggle()
+    with_flash(function(flash)
+      flash.toggle()
+    end)
   end, { desc = "Toggle Flash Search" })
   vim.keymap.set({ "n", "o", "x" }, "<C-Space>", function()
-    flash.treesitter({
-      actions = {
-        ["<C-Space>"] = "next",
-        ["<BS>"] = "prev",
-      },
-    })
+    with_flash(function(flash)
+      flash.treesitter({
+        actions = {
+          ["<C-Space>"] = "next",
+          ["<BS>"] = "prev",
+        },
+      })
+    end)
   end, { desc = "Treesitter Incremental Selection" })
 end
 
@@ -1040,13 +1059,16 @@ local function setup_lsp()
   end
 end
 
-local function setup_treesitter()
-  load_plugin("nvim-treesitter")
-  local treesitter = safe_require("nvim-treesitter")
-  if not treesitter then
-    return
-  end
+local function setup_lsp_on_demand()
+  vim.api.nvim_create_autocmd({ "BufReadPre", "BufNewFile" }, {
+    once = true,
+    callback = function()
+      once("lsp", setup_lsp)
+    end,
+  })
+end
 
+local function setup_treesitter()
   local languages = {
       "c",
       "cpp",
@@ -1067,12 +1089,26 @@ local function setup_treesitter()
       "markdown_inline",
   }
 
-  treesitter.setup({
-    install_dir = vim.fn.stdpath("data") .. "/site",
-  })
+  local function ensure_treesitter()
+    once("treesitter", function()
+      load_plugin("nvim-treesitter")
+      local treesitter = safe_require("nvim-treesitter")
+      if treesitter then
+        treesitter.setup({
+          install_dir = vim.fn.stdpath("data") .. "/site",
+        })
+      end
+    end)
+
+    return safe_require("nvim-treesitter")
+  end
 
   if vim.fn.exists(":TSInstallConfigured") == 0 then
     vim.api.nvim_create_user_command("TSInstallConfigured", function(opts)
+      local treesitter = ensure_treesitter()
+      if not treesitter then
+        return
+      end
       local task = treesitter.install(languages)
       if opts.bang and task and task.wait then
         task:wait(300000)
@@ -1085,6 +1121,10 @@ local function setup_treesitter()
 
   if vim.fn.exists(":TSUpdateConfigured") == 0 then
     vim.api.nvim_create_user_command("TSUpdateConfigured", function(opts)
+      local treesitter = ensure_treesitter()
+      if not treesitter then
+        return
+      end
       local task = treesitter.update(languages)
       if opts.bang and task and task.wait then
         task:wait(300000)
@@ -1117,6 +1157,10 @@ local function setup_treesitter()
       "markdown",
     },
     callback = function(args)
+      local treesitter = ensure_treesitter()
+      if not treesitter then
+        return
+      end
       pcall(vim.treesitter.start, args.buf)
       vim.bo[args.buf].indentexpr = "v:lua.require'nvim-treesitter'.indentexpr()"
     end,
@@ -1458,7 +1502,7 @@ function M.setup()
   setup_goto_preview()
   setup_markdown()
   setup_mason_commands()
-  setup_lsp()
+  setup_lsp_on_demand()
   setup_treesitter()
   setup_code_runner()
   setup_neotest()
