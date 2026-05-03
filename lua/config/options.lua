@@ -3,6 +3,8 @@ vim.g.markdown_recommended_style = 0
 
 local opt = vim.opt
 
+require("config.clipboard").setup()
+
 opt.autowrite = true
 opt.clipboard = {}
 opt.completeopt = "menu,menuone,noselect"
