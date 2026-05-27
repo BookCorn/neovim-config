@@ -14,31 +14,15 @@ local THEMES = {
   dark = {
     background = "dark",
     colorscheme = "gruvbox",
-    lualine = "gruvbox",
   },
   light = {
     background = "light",
-    colorscheme = "catppuccin-latte",
-    lualine = "auto",
+    colorscheme = "gruvbox",
   },
 }
 
 local function normalize(text)
   return (text or ""):lower()
-end
-
-local function apply_lualine_theme(name)
-  local ok, lualine = pcall(require, "lualine")
-  if not ok then
-    return
-  end
-
-  lualine.setup({
-    options = {
-      theme = name,
-      globalstatus = true,
-    },
-  })
 end
 
 local function is_light_terminal_theme(name)
@@ -105,7 +89,6 @@ function M.apply(variant)
   vim.o.background = theme.background
   vim.cmd.colorscheme(theme.colorscheme)
   apply_variant_highlights(variant)
-  apply_lualine_theme(theme.lualine)
 end
 
 function M.toggle()

@@ -1,11 +1,14 @@
 # Neovim
 
-This configuration uses Neovim 0.12's built-in `vim.pack` plugin manager.
+This server-focused configuration uses Neovim 0.12's built-in `vim.pack` plugin manager.
+
+The branch keeps a small plugin set for SSH and operations work: Git signs, quick movement,
+Telescope search, external LSPs, formatting hooks, Treesitter, pairs, surround, undo history,
+and yank history. Desktop-only, AI, browser preview, Mason, LeetCode, and large test-runner
+plugins are intentionally omitted.
 
 ## Maintenance
 
 - `:PackUpdate` updates plugins managed by `vim.pack`.
-- `:MasonToolsInstall` installs configured Mason tools such as `gopls`.
+- Install language servers and formatters with the server's package manager or project tooling.
 - `:TSInstallConfigured` installs configured Treesitter parsers. Use `:TSInstallConfigured!` in headless/bootstrap scripts to wait for completion.
-- `:TSUpdateConfigured` updates configured Treesitter parsers. Use `:TSUpdateConfigured!` in headless/bootstrap scripts to wait for completion.
-- `:MarkdownPreviewInstallDeps` installs the browser preview dependencies for `markdown-preview.nvim`.
